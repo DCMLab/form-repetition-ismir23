@@ -225,29 +225,30 @@ function push_tcompletions!(::RepGrammar, cell, terminal)
 end
 
 function push_ntcompletions!(::RepGrammar, cell, leftstr, leftcat, rightstr, rightcat)
-    # AA
-    if leftstr == rightstr && leftcat == rightcat == NT
-        push!(cell, NT, AA(leftstr))
-    end
-
-    # AB
-    if leftstr != rightstr && leftcat == rightcat == NT
-        push!(cell, NT, AB(leftstr, rightstr))
-    end
-
-    # incomplete AA
-    if leftstr == rightstr && leftcat == rightcat == NT
-        push!(cell, NTAA(leftstr))
-    end
-
-    # incomplete AB
-    if leftstr != rightstr && leftcat == rightcat == NT
-        push!(cell, NTAB(leftstr, rightstr))#ABA(leftstr, rightstr))
-    end
-
     # complete ternatiry rules
     @cases leftcat begin
-        NT => nothing
+        NT =>
+            if rightcat == NT
+                # AA
+                if leftstr == rightstr
+                    push!(cell, NT, AA(leftstr))
+                end
+                
+                # AB
+                if leftstr != rightstr
+                    push!(cell, NT, AB(leftstr, rightstr))
+                end
+                
+                # incomplete AA
+                if leftstr == rightstr
+                    push!(cell, NTAA(leftstr))
+                end
+                
+                # incomplete AB
+                if leftstr != rightstr
+                    push!(cell, NTAB(leftstr, rightstr))#ABA(leftstr, rightstr))
+                end
+            end
         NTAB(a, b) =>
             # ABA
             if a == rightstr && rightcat == NT
@@ -311,4 +312,16 @@ function write_examples()
     seq2json(example2, "example2.json")
     seq2json(melodies[1], "melody1.json")
     seq2json(melodies[2], "melody2.json")
+end
+
+@sum_type MyMaybe begin
+    None
+    Just(x)
+end
+
+xs = [NT for i in 1:1000]
+ys = [NTAA(["$(i)"]) for i in 1:1000]
+
+testfun() = for i in 1:1000
+    xs[i] == ys[i]
 end
