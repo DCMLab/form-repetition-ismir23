@@ -1,4 +1,4 @@
 *.xz
 *.json
 acfg-experiment/
-python/env/
+generate-data/env/
