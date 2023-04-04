@@ -279,7 +279,7 @@ example2 = categorical(["g2", "e2", "g2", "e2", "f4", "e4", "f4", "g4", "e1",
   "g2", "e2", "g2", "e2", "f4", "e4", "f4", "g4", "e1"])
 
 function load_melodies()
-    melodies_df = DataFrame(CSV.File("../essen.tsv"))
+    melodies_df = DataFrame(CSV.File("../data/essen.tsv"))
 
     function df_to_melody(df)
         row_to_note(pitch, dur) = "$(pitch)-$(dur)"
