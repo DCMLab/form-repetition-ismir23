@@ -314,14 +314,70 @@ function write_examples()
     seq2json(melodies[2], "melody2.json")
 end
 
-@sum_type MyMaybe begin
-    None
-    Just(x)
-end
+# # alternative parser
 
-xs = [NT for i in 1:1000]
-ys = [NTAA(["$(i)"]) for i in 1:1000]
+# function parse2(input::A) where A
+#     substrings = subsequences(input)
 
-testfun() = for i in 1:1000
-    xs[i] == ys[i]
-end
+#     chart = [Dict{A,Vector{RepRule}}() for i in 1:length(input)]
+
+#     # terminal rules
+#     for str in keys(substrings[1])
+#         chart[1][str] = [Terminate(str[1])]
+#     end
+
+#     # non-terminal rules
+#     for len in 2 : length(input)
+#         for str in keys(substrings[len])
+#             cell = RepRule[]
+
+#             # split 1
+#             for split1 in 1:len-1
+#                 sub1 = @view str[1:split1]
+#                 sub2 = @view str[split1+1:end]
+
+#                 # binary rules
+#                 if sub1 == sub2 # AA
+#                     push!(cell, AA(sub1))
+#                 else # AB
+#                     push!(cell, AB(sub1, sub2))
+#                 end
+
+#                 # split 2
+#                 for split2 in split1+1:len-1
+#                     sub2 = @view str[split1+1:split2]
+#                     sub3 = @view str[split2+1:end]
+
+#                     # ternary rules
+#                     # AAB
+#                     if sub1 == sub2 && sub2 != sub3
+#                         push!(cell, AAB(sub1, sub3))
+#                     end
+#                     # ABA
+#                     if sub1 == sub3 && sub1 != sub2
+#                         push!(cell, ABA(sub1, sub2))
+#                     end
+
+#                     # split 3
+#                     for split3 in split2+1:len-1
+#                         sub3 = @view str[split2+1:split3]
+#                         sub4 = @view str[split3+1:end]
+
+#                         # 4-ary rules
+#                         if sub1 == sub2 && sub1 == sub4 && sub1 != sub3
+#                             push!(cell, AABA(sub1, sub3))
+#                         end
+#                     end
+#                 end
+#             end
+#             chart[len][str] = cell
+#         end
+#     end
+
+#     return chart
+# end
+
+# chartrules2(chart) =
+#     Dict(sub => cell
+#          for layer in chart
+#              for (sub, cell) in layer)
