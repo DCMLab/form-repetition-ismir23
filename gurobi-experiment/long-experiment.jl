@@ -14,7 +14,7 @@ function run_timing()
     Opt.time_subs()
 end
 
-function run_long_experiment()
+function run_long_experiment(n=nothing)
 
     function process_melody((i, melody))
         println("processing melody $(i) (length ($(length(melody))))...")
@@ -36,6 +36,9 @@ function run_long_experiment()
     println("loading melodies...")
     melodies = Parse.load_melodies()
     melodies_sorted = sort(melodies, by=x->length(x))
+    if n == nothing
+        n = length(melodies_sorted)
+    end
 
     pmap(process_melody, enumerate(melodies_sorted[1:10]));
 end
