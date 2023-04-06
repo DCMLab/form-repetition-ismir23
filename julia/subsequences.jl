@@ -173,36 +173,48 @@ end
     Terminate(t)
     AA(a)
     AB(a, b)
+    AAA(a)
     ABA(a, b)
     AAB(a, b)
+    ABB(a, b)
     AABA(a, b)
+    ABBA(a, b)
 end
 
 SumTypes.show_sumtype(io::IO, x::RepRule) = @cases x begin
     Terminate(t) => print(io, "Term($t)")
     AA(a) => print(io, "AA($(a))")
     AB(a, b) => print(io, "AB($(a), $(b))")
+    AAA(a) => print(io, "AAA($(a))")
     ABA(a, b) => print(io, "ABA($(a), $(b))")
     AAB(a, b) => print(io, "AAB($(a), $(b))")
+    ABB(a, b) => print(io, "ABB($(a), $(b))")
     AABA(a, b) => print(io, "AABA($(a), $(b))")
+    ABBA(a, b) => print(io, "ABBA($(a), $(b))")
 end
 
 map_rule(f, rule::RepRule) = @cases rule begin
     Terminate(t) => Terminate(t) # don't apply f here
     AA(a) => AA(f(a))
     AB(a, b) => AB(f(a), f(b))
+    AAA(a) => AAA(f(a))
     ABA(a, b) => ABA(f(a), f(b))
     AAB(a, b) => AAB(f(a), f(b))
+    ABB(a, b) => ABB(f(a), f(b))
     AABA(a, b) => AABA(f(a), f(b))
+    ABBA(a, b) => ABBA(f(a), f(b))
 end
 
 JSON.lower(rule::RepRule) = @cases rule begin
     Terminate(t) => (ruletype="Term", params=[t])
     AA(a) => (ruletype="AA", params=[a])
     AB(a, b) => (ruletype="AB", params=[a, b])
+    AAA(a) => (ruletype="AAA", params=[a])
     ABA(a, b) => (ruletype="ABA", params=[a, b])
     AAB(a, b) => (ruletype="AAB", params=[a, b])
+    ABB(a, b) => (ruletype="ABB", params=[a, b])
     AABA(a, b) => (ruletype="AABA", params=[a, b])
+    ABBA(a, b) => (ruletype="ABBA", params=[a, b])
 end
 
 @sum_type NonTerminal begin
@@ -250,15 +262,32 @@ function push_ntcompletions!(::RepGrammar, cell, leftstr, leftcat, rightstr, rig
                 end
             end
         NTAB(a, b) =>
-            # ABA
-            if a == rightstr && rightcat == NT
-                push!(cell, NT, ABA(a, b))
+            @cases rightcat begin
+                NT => begin
+                    # ABA
+                    if a == rightstr
+                        push!(cell, NT, ABA(a, b))
+                    end
+
+                    # ABB
+                    if b == rightstr
+                        push!(cell, NT, ABB(a, b))
+                    end
+                end
+                NTAB(a2, b2) =>
+                    # ABBA
+                    if a == b2 && b == a2
+                        push!(cell, NT, ABBA(a, b))
+                    end
+                NTAA => nothing # relevant cases covered below
             end
         NTAA(a) =>
             @cases rightcat begin
                 NT =>
-                    # AAB
-                    if a != rightstr
+                    # AAA or AAB
+                    if a == rightstr # AAA
+                        push!(cell, NT, AAA(a))
+                    else # AAB
                         push!(cell, NT, AAB(a, rightstr))
                     end
                 NTAB(b, a2) =>
@@ -274,10 +303,10 @@ end
 # scripts
 
 example = categorical(["g2", "e2", "g2", "e2", "f4", "e4", "f4", "g4", "e1"])
-example2 = categorical(["g2", "e2", "g2", "e2", "f4", "e4", "f4", "g4", "e1",
+example2 = ["g2", "e2", "g2", "e2", "f4", "e4", "f4", "g4", "e1",
   "d4", "d4", "f4", "f4", "e4", "f4", "g2",
   "d4", "d4", "f4", "f4", "e4", "f4", "g2",
-  "g2", "e2", "g2", "e2", "f4", "e4", "f4", "g4", "e1"])
+  "g2", "e2", "g2", "e2", "f4", "e4", "f4", "g4", "e1"]
 
 function load_melodies()
     melodies_df = DataFrame(CSV.File("../data/essen.tsv"))
@@ -290,21 +319,22 @@ function load_melodies()
     [df_to_melody(sub) for sub in groupby(melodies_df, :piece)]
 end
 
+
+function seq2json(seq, fn)
+    println("running $(fn)")
+    chart = parse(RepGrammar(), seq)
+    rules = chartrules(chart)
+    srules = symbolize_rules(rules)
+    drules = determ_rules(rules)
+    
+    out = (seq=seq, symb_rules=srules, determ_rules=drules, start=hash(seq))
+    open("../data/$(fn)", "w") do f
+        JSON.print(f, out)
+    end
+end
+
 function write_examples()
     melodies = load_melodies()
-
-    function seq2json(seq, fn)
-        println("running $(fn)")
-        chart = parse(RepGrammar(), seq)
-        rules = chartrules(chart)
-        srules = symbolize_rules(rules)
-        drules = determ_rules(rules)
-
-        out = (seq=seq, symb_rules=srules, determ_rules=drules, start=hash(seq))
-        open("../data/"+fn, "w") do f
-            JSON.print(f, out)
-        end
-    end
 
     seq2json("xxy", "xxy.json")
     seq2json("xxyx", "xxyx.json")
@@ -312,6 +342,16 @@ function write_examples()
     seq2json(example2, "example2.json")
     seq2json(melodies[1], "melody1.json")
     seq2json(melodies[2], "melody2.json")
+end
+
+function write_subsequences()
+    seqs = [example2[1:i] for i in 1:length(example2)]
+
+    for i in 1:length(example2)
+        sub = example2[1:i]
+
+        seq2json(sub, "subs/n$(i).json")
+    end
 end
 
 # # alternative parser
