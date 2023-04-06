@@ -202,6 +202,29 @@ function print_minimal_ruleset(ruleset, rules)
     end
 end
 
+function minimal_ruleset_to_json(ruleset, rules, runtime=nothing)
+    show_symbol(s) = "S$(ruleset.symbol_indices[s])"
+
+    show_param(p) = @cases p begin
+        Term(t) => (symbtype="T", value=string(t))
+        NonTerm(symb) => (symbtype="NT", value=show_symbol(symb))
+    end
+
+    out_rules = []
+
+    for rule in rules
+        lhs = show_symbol(rule.lhs)
+        t = rule.type
+        params = [show_param(p) for p in rule.params]
+        push!(out_rules, (lhs=lhs, ruletype=t, params=params))
+    end
+
+    (start=show_symbol(ruleset.start),
+     seq=ruleset.seq,
+     runtime=runtime,
+     rules=out_rules)
+end
+
 
 function minimize_ruleset(ruleset, cost_fn=rule_dl_cost_humphreyslike)
     model = Model(() -> Gurobi.Optimizer(GRB_ENV))
@@ -260,7 +283,8 @@ end
 function test_ruleset(fn)
     ruleset = load_ruleset(fn)
     min_rules, t = minimize_ruleset(ruleset)
-    print_minimal_ruleset(ruleset, min_rules)
+    print_minimal_ruleset(ruleset, min_rules, t)
+    JSON.print(minimal_ruleset_to_json(ruleset, min_rules), 2)
 end
 
 function time_subs(n=32)
