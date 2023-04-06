@@ -3,6 +3,9 @@ using Gurobi
 using HiGHS
 import JSON
 using SumTypes
+using Plots
+using DataFrames
+import CSV
 
 const GRB_ENV = Gurobi.Env()
 
@@ -107,6 +110,16 @@ end
 
 rule_dl_cost(rule::Rule) = 1 + length(rule.params)
 
+rule_dl2_cost(rule::Rule) = 1 + length(rule.type) # by number of RHS symbols normally
+
+"""
+Cost in analogy to Humphreys et al. (2021):
+- 1 for the meta-rule symbol (AA/AB/...)
+- 1 per parameter of the meta rule
+- 1 for a separator symbol to the next rule
+"""
+rule_dl_cost_humphreyslike(rule::Rule) = 2 + length(rule.params)
+
 function load_ruleset(fn)
     json = JSON.parsefile(fn)
 
@@ -190,13 +203,13 @@ function print_minimal_ruleset(ruleset, rules)
 end
 
 
-function minimize_ruleset(ruleset)
+function minimize_ruleset(ruleset, cost_fn=rule_dl_cost_humphreyslike)
     model = Model(() -> Gurobi.Optimizer(GRB_ENV))
     # model = Model(HiGHS.Optimizer)
 
     rules = ruleset.rules
     symbols = ruleset.symbols
-    costs = rule_dl_cost.(rules)
+    costs = cost_fn.(rules)
 
     # helpers
 
@@ -238,12 +251,28 @@ function minimize_ruleset(ruleset)
     @objective(model, Min, sum(rulevar[i] * costs[i] for i in 1:length(rules)))
 
     optimize!(model)
-
-    return rules[Bool.(value.(rulevar))]
+    
+    t = MOI.get(model, Gurobi.ModelAttribute("Runtime"))
+    
+    return rules[Bool.(value.(rulevar))], t
 end
 
 function test_ruleset(fn)
     ruleset = load_ruleset(fn)
-    min_rules = minimize_ruleset(ruleset)
+    min_rules, t = minimize_ruleset(ruleset)
     print_minimal_ruleset(ruleset, min_rules)
+end
+
+function time_subs(n=32)
+    times = []
+    for i in 2:n
+        ruleset = load_ruleset("../data/subs/n$(i).json")
+        min_rules, t = minimize_ruleset(ruleset)
+        push!(times, t)
+    end
+
+    df = DataFrame(length=2:n, time=times)
+    CSV.write("../data/sub_times.tsv", df, delim='\t')
+    
+    times
 end
