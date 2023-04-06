@@ -40,5 +40,5 @@ function run_long_experiment(n=nothing)
         n = length(melodies_sorted)
     end
 
-    pmap(process_melody, enumerate(melodies_sorted[1:10]));
+    pmap(process_melody, enumerate(melodies_sorted[1:n]));
 end
