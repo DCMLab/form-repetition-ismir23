@@ -92,13 +92,13 @@ SumTypes.show_sumtype(io::IO, x::GrammarSymbol) = @cases x begin
 end
 
 struct Rule
-    lhs :: Int64
+    lhs
     type :: String
     params :: Vector{GrammarSymbol}
 end
 
 function rule_params(rule::Rule)    
-    deps = Int64[]
+    deps = []
     for p in rule.params
         @cases p begin
             Term => nothing
@@ -156,6 +156,24 @@ function load_ruleset(fn)
      rule_groups=rule_groups,
      symbols=symbols,
      symbol_indices=symbol_indices)
+end
+
+function load_minimal_ruleset(fn)
+    json = JSON.parsefile(fn)
+
+    mkparam(p) = if p["symbtype"] == "T"
+        Term(p["value"])
+    else
+        NonTerm(p["value"])
+    end
+    mkrule(rule) = Rule(rule["lhs"], rule["ruletype"], [mkparam(p) for p in rule["params"]])
+
+    rules = [mkrule(rule) for rule in json["rules"]]
+    
+    (start = json["start"],
+     seq = json["seq"],
+     runtime = json["runtime"],
+     rules = rules)
 end
 
 function print_ruleset(ruleset)
@@ -257,7 +275,7 @@ function minimize_ruleset(ruleset, cost_fn=rule_dl_cost_humphreyslike)
     for i in 1:length(rules)
         deps = ruledeps(rules[i])
         if length(deps) > 0
-            @constraint(model, rulevar[i] <= sum(symbvar[deps] / length(deps)))
+            @constraint(model, rulevar[i] <= sum(symbvar[deps]) / length(deps))
         end
     end
 
@@ -280,11 +298,60 @@ function minimize_ruleset(ruleset, cost_fn=rule_dl_cost_humphreyslike)
     return rules[Bool.(value.(rulevar))], t
 end
 
+function minimize_ruleset_mc(ruleset; cost_fn=rule_dl_cost_humphreyslike, n=100)
+    rules = ruleset.rules
+    symbols = ruleset.symbols
+    costs = cost_fn.(rules)
+
+    # helpers
+
+    symboli(s) = ruleset.symbol_indices[s]
+    
+    ruledeps(r) = symboli.(rule_params(r))
+
+    ruleopts(lhs) =
+        [ruleset.rule_indices[rule] for rule in ruleset.rule_groups[lhs]]
+
+    function sample_rules()
+        agenda = [ruleset.start]
+        min_rules = []
+        while !isempty(agenda)
+            lhs = popfirst!(agenda)
+            candidates = ruleset.rule_groups[lhs]
+            rule = rand(candidates)
+            push!(min_rules, rule)
+            push!(agenda, rule_params(rule)...)
+        end
+        min_rules
+    end
+
+    min_set = nothing
+    min_cost = nothing
+    for i in 1:n
+        new_set = sample_rules()
+        new_cost = sum(cost_fn.(new_set))
+        if min_cost == nothing || new_cost < min_cost
+            min_set = new_set
+            min_cost = new_cost
+        end
+    end
+
+    min_set, min_cost
+end
+
 function test_ruleset(fn)
     ruleset = load_ruleset(fn)
     min_rules, t = minimize_ruleset(ruleset)
-    print_minimal_ruleset(ruleset, min_rules, t)
-    JSON.print(minimal_ruleset_to_json(ruleset, min_rules), 2)
+    print_minimal_ruleset(ruleset, min_rules)
+    println("solving time: ", t)
+    # JSON.print(minimal_ruleset_to_json(ruleset, min_rules, t), 2)
+end
+
+function test_ruleset_mc(fn)
+    ruleset = load_ruleset(fn)
+    min_rules, cost = minimize_ruleset_mc(ruleset)
+    print_minimal_ruleset(ruleset, min_rules)
+    print("cost: ", cost)
 end
 
 function time_subs(n=32)
