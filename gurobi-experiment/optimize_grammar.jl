@@ -108,6 +108,8 @@ function rule_params(rule::Rule)
     deps
 end
 
+unfold_params(rule::Rule) = [rule.params[codepoint(var)-0x40] for var in rule.type]
+
 rule_dl_cost(rule::Rule) = 1 + length(rule.params)
 
 rule_dl2_cost(rule::Rule) = 1 + length(rule.type) # by number of RHS symbols normally
@@ -261,7 +263,7 @@ function minimize_ruleset(ruleset, cost_fn=rule_dl_cost_humphreyslike)
     ruleopts(lhs) =
         [ruleset.rule_indices[rule] for rule in ruleset.rule_groups[lhs]]
 
-    # model variables
+    ## model variables
     
     # one variable per rule
     @variable(model, rulevar[1:length(rules)], Bin)
@@ -269,7 +271,7 @@ function minimize_ruleset(ruleset, cost_fn=rule_dl_cost_humphreyslike)
     # one variable per symbol
     @variable(model, symbvar[1:length(symbols)], Bin)
 
-    # constraints
+    ## constraints
     
     # rules depend on their RHS symbols
     for i in 1:length(rules)
@@ -287,7 +289,7 @@ function minimize_ruleset(ruleset, cost_fn=rule_dl_cost_humphreyslike)
     # the starting symbol is required
     @constraint(model, symbvar[symboli(ruleset.start)] == 1)
 
-    # objective function
+    ## objective function
 
     @objective(model, Min, sum(rulevar[i] * costs[i] for i in 1:length(rules)))
 

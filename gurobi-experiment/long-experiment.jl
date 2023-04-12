@@ -7,13 +7,26 @@ module Parse
 include("./parser.jl")
 end
 
-module Opt
 include("./optimize_grammar.jl")
-end
+
+include("./plotting.jl")
 
 function run_timing()
     Parse.write_subsequences()
-    Opt.time_subs()
+    time_subs()
+end
+
+function run_examples()
+    for piece in ["xxy", "xxyx", "example1", "example2"]
+        println("running ", piece)
+        
+        ruleset = load_ruleset("../data/$(piece).json")
+        min_rules, t = minimize_ruleset(ruleset)
+        out = minimal_ruleset_to_json(ruleset, min_rules, t)
+        open("../data/grammar_$(piece).json", "w") do f
+            JSON.print(f, out)
+        end
+    end
 end
 
 function run_long_experiment(n=nothing)
@@ -25,9 +38,9 @@ function run_long_experiment(n=nothing)
         Parse.seq2json(melody, "melodies/rulesets/ruleset_essen_$(i).json")
 
         # minimize ruleset
-        ruleset = Opt.load_ruleset("../data/melodies/rulesets/ruleset_essen_$(i).json")
-        min_rules, t = Opt.minimize_ruleset(ruleset)
-        out = Opt.minimal_ruleset_to_json(ruleset, min_rules, t)
+        ruleset = load_ruleset("../data/melodies/rulesets/ruleset_essen_$(i).json")
+        min_rules, t = minimize_ruleset(ruleset)
+        out = minimal_ruleset_to_json(ruleset, min_rules, t)
         open("../data/melodies/grammars/grammar_essen_$(i).json", "w") do f
             JSON.print(f, out)
         end
@@ -54,9 +67,9 @@ end
 function run_monte_carlo(n=100; directory="../data/melodies")
     for name in list_pieces(directory)
         println("running $(name)")
-        ruleset = Opt.load_ruleset(joinpath(directory, "rulesets", "ruleset_$(name).json"))
-        min_rules, cost = Opt.minimize_ruleset_mc(ruleset, n=n)
-        out = Opt.minimal_ruleset_to_json(ruleset, min_rules)
+        ruleset = load_ruleset(joinpath(directory, "rulesets", "ruleset_$(name).json"))
+        min_rules, cost = minimize_ruleset_mc(ruleset, n=n)
+        out = minimal_ruleset_to_json(ruleset, min_rules)
         open(joinpath(directory, "mc_grammars", "mc_grammar_$(name).json"), "w") do f
             JSON.print(f, out)
         end
@@ -65,11 +78,11 @@ end
 
 function compare_grammars(directory="../data/melodies")
     function collect_point(name)
-        grammar_opt = Opt.load_minimal_ruleset(joinpath(directory, "grammars", "grammar_$(name).json"))
-        grammar_mc = Opt.load_minimal_ruleset(joinpath(directory, "mc_grammars", "mc_grammar_$(name).json"))
+        grammar_opt = load_minimal_ruleset(joinpath(directory, "grammars", "grammar_$(name).json"))
+        grammar_mc = load_minimal_ruleset(joinpath(directory, "mc_grammars", "mc_grammar_$(name).json"))
 
-        (opt=sum(Opt.rule_dl_cost_humphreyslike.(grammar_opt.rules)),
-         mc=sum(Opt.rule_dl_cost_humphreyslike.(grammar_mc.rules)),
+        (opt=sum(rule_dl_cost_humphreyslike.(grammar_opt.rules)),
+         mc=sum(rule_dl_cost_humphreyslike.(grammar_mc.rules)),
          name=name)
     end
     
