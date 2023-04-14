@@ -35,14 +35,20 @@ function run_long_experiment(n=nothing)
         println("processing melody $(i) (length ($(length(melody))))...")
 
         # create ruleset
-        Parse.seq2json(melody, "melodies/rulesets/ruleset_essen_$(i).json")
+        ruleset_path = "melodies/rulesets/ruleset_essen_$(i).json"
+        if !isfile(joinpath("../data", ruleset_path))
+            Parse.seq2json(melody, ruleset_path)
+        end
 
         # minimize ruleset
-        ruleset = load_ruleset("../data/melodies/rulesets/ruleset_essen_$(i).json")
-        min_rules, t = minimize_ruleset(ruleset)
-        out = minimal_ruleset_to_json(ruleset, min_rules, t)
-        open("../data/melodies/grammars/grammar_essen_$(i).json", "w") do f
-            JSON.print(f, out)
+        grammar_path = "../data/melodies/grammars/grammar_essen_$(i).json"
+        if !isfile(grammar_path)
+            ruleset = load_ruleset(joinpath("../data", ruleset_path))
+            min_rules, t = minimize_ruleset(ruleset)
+            out = minimal_ruleset_to_json(ruleset, min_rules, t)
+            open(grammar_path, "w") do f
+                JSON.print(f, out)
+            end
         end
 
         println("done melody $(i)")
