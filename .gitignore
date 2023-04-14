@@ -1,4 +1,3 @@
 *.xz
-*.json
 acfg-experiment/
 generate-data/env/

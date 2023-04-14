@@ -1,0 +1,1 @@
+{"start":"S3","seq":"xxyx","runtime":0.010062932968139648,"rules":[{"lhs":"S3","ruletype":"AABA","params":[{"symbtype":"T","value":"x"},{"symbtype":"T","value":"y"}]}]}
