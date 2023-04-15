@@ -70,7 +70,7 @@ function list_pieces(directory)
     [basename(fn)[9:end-5] for fn in fns]
 end
 
-function run_monte_carlo(n=100; directory="../data/melodies")
+function run_monte_carlo(n=10000; directory="../data/melodies")
     for name in list_pieces(directory)
         println("running $(name)")
         ruleset = load_ruleset(joinpath(directory, "rulesets", "ruleset_$(name).json"))
