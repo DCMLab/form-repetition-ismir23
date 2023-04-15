@@ -4,7 +4,7 @@ This repository contains code and data related to the paper "Repetition Structur
 
 The repo contains the following code and data:
 - `generate-data/`: code for extracting the datasets (Python)
-  - `extract-essen.py`: converting the Essen folksong corpus to tsv
+  - `extract-essen.py`: converting the Essen Folksong Collection to tsv
   - `extract-mtc.py`: converting the Meertens Tune Collection to tsv (not used in the paper)
   - `requirements.txt`: Python dependencies
 - `inference/`: code for grammar inference (Julia)
@@ -15,7 +15,7 @@ The repo contains the following code and data:
   - `plotting.jl`: helper code for plotting
   - `plots.ipynb`: notebook for generating the plots and analyses shown in the paper
 - `data/`: data and results
-  - `essen.tsv`: Essen folksong melodies as note lists
+  - `essen.tsv`: Essen Folksong Collection as note lists
   - `mtc.tsv`: Meertens Tune Collection melodies as note lists (not used)
   - `[grammar_]{xxy,xxyx,example1,example2}.json`: rulesets and grammars for example pieces.
   - `melodies/`: computed rulesets and grammars for short tunes from the Essen corpus
