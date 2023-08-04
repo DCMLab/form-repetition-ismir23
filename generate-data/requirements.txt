@@ -47,7 +47,7 @@ executing==1.2.0
 fasteners==0.18
 fastjsonschema==2.16.2
 fonttools==4.31.2
-future==0.18.2
+future==0.18.3
 gaupol==1.12
 git-archive-all==1.23.0
 google-api-core==2.11.0
