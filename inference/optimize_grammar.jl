@@ -7,10 +7,16 @@ using Plots
 using DataFrames
 import CSV
 
+# for Gurobi, uncomment this:
 const GRB_ENV = Gurobi.Env()
+const OPTIMIZER = () -> Gurobi.Optimizer(GRB_ENV)
+
+# # for HiGHS, uncomment this:
+# const OPTIMIZER = HiGHS.Optimizer
+# # and adapt the line t = MOI.get(...) below
 
 function model_xxy_direct()
-    model = Model(() -> Gurobi.Optimizer(GRB_ENV))
+    model = Model(OPTIMIZER)
 
     # variables
 
@@ -42,8 +48,7 @@ function model_xxy_direct()
 end
 
 function model_xxy()
-    #model = Model(() -> Gurobi.Optimizer(GRB_ENV))
-    model = Model(HiGHS.Optimizer)
+    model = Model(OPTIMIZER)
 
     # variables
 
@@ -247,8 +252,7 @@ end
 
 
 function minimize_ruleset(ruleset, cost_fn=rule_dl_cost_humphreyslike)
-    model = Model(() -> Gurobi.Optimizer(GRB_ENV))
-    # model = Model(HiGHS.Optimizer)
+    model = Model(OPTIMIZER)
 
     rules = ruleset.rules
     symbols = ruleset.symbols
@@ -294,10 +298,14 @@ function minimize_ruleset(ruleset, cost_fn=rule_dl_cost_humphreyslike)
     @objective(model, Min, sum(rulevar[i] * costs[i] for i in 1:length(rules)))
 
     optimize!(model)
-    
+
+    # for Gurobi
     t = MOI.get(model, Gurobi.ModelAttribute("Runtime"))
     
-    return rules[Bool.(value.(rulevar))], t
+    # # for other optimizers:
+    # t = 0
+    
+    return rules[Bool.(round.(value.(rulevar)))], t
 end
 
 function minimize_ruleset_mc(ruleset; cost_fn=rule_dl_cost_humphreyslike, n=100)

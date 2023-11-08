@@ -1,3 +1,5 @@
+using SumTypes
+
 function sort_rules(rules, start)
     rule_dict = Dict(r.lhs => r for r in rules)
     sorted_rules = []
