@@ -1,7 +1,6 @@
 import music21
 import pandas as pd
 import pitchtypes as pt
-import pathlib
 import tqdm
 import multiprocessing as mp
 import argparse

@@ -12,11 +12,17 @@ example_file = pathlib.Path("/home/chfin/Uni/phd/data/meertens-tune-collection/M
 example_dir = pathlib.Path("/home/chfin/Uni/phd/data/meertens-tune-collection/MTC-FS-INST-2.0/krn/")
 
 def krn_to_mel(filepath):
-    piece = music21.converter.parse(filepath).parts[0].flatten().notesAndRests
+    stream = music21.converter.parseFile(filepath, forceSource=True, storePickle=False)
+    if isinstance(stream, music21.stream.base.Opus):
+        piece = stream.scores[0].parts[0]
+    elif isinstance(stream, music21.stream.base.Score):
+        piece = stream.parts[0]
+    else:
+        piece = stream
     pitches = []
     durations = []
     
-    for note in piece:
+    for note in piece.flatten().notesAndRests:
         if isinstance(note, music21.note.Rest):
             pitch = 'r'
         elif isinstance(note, music21.note.Note):
